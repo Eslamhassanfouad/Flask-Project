@@ -1,6 +1,11 @@
 {% extends 'layout.html' %}
 {% block content %}
+{% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
+<h1>{{ message }}</h1>
+{% endfor %}
+{% endif %}
 
+{% endwith %}
 <form method="POST" action ="" class="w-50">
 {% for field in data.form %}
 <div class="form-group ">

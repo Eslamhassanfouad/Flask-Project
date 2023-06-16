@@ -9,6 +9,11 @@ class RegisterForm(FlaskForm):
                             Email()
                         ]
     )
+    name = StringField('Name' ,
+                        validators=[
+                            DataRequired(),
+                        ]
+    )
     password1 = PasswordField('Password' ,
                               validators=[
                                   DataRequired(),
