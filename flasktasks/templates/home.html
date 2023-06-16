@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block styles %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='home.css') }}">
+    {% endblock %}
+{% block content %}
+  <h1>Welcome to my home page!</h1>
+  <p>This is some content for the home page.</p>
+  {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
+      <h1>{{ message }}</h1>
+      {% endfor %}
+      {% endif %}
+    
+      {% endwith %}
+{% endblock %}
+
+{% with nav_items = nav_items %}
+{% endwith %}
