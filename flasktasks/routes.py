@@ -43,7 +43,8 @@ def home_endpoint():
         nav_items = [
     {'name': 'Home', 'url': '/home'},
     {'name': 'Profile', 'url': '/profile'},
-    {'name': 'Logout', 'url': '/logout'}
+    {'name': 'Register', 'url': '/register'},
+    {'name': 'Login', 'url': '/login'}
 
 
 ]
@@ -62,9 +63,10 @@ def profile_endpoint():
 ]
     else:
         nav_items = [
-    {'name': 'Home', 'url': '/home'},
-    {'name': 'Profile', 'url': '/profile'},
-    {'name': 'Logout', 'url': '/logout'}
+            {'name': 'Home', 'url': '/home'},
+            {'name': 'Profile', 'url': '/profile'},
+            {'name': 'Register', 'url': '/register'},
+            {'name': 'Login', 'url': '/login'}
 
 
 ]
@@ -129,8 +131,9 @@ def logout():
     logout_user()
     return redirect(url_for('login_endpoint'))
 
-@app.route('/profile',methods=['GET','POST'])
-def profile():
+@app.route('/profile/<int:id>',methods=['GET','POST'])
+@login_required
+def profile(id):
     nav_items = [
     {'name': 'Home', 'url': '/home'},
     {'name': 'Profile', 'url': '/profile'},
@@ -141,28 +144,40 @@ def profile():
     if request.method=='POST':
         title=request.form['title']
         content=request.form['content']
-        user_id=current_user.id
-        new_post = Post(title=title, content=content, user_id=user_id)
+        id=request.form['user_id']
+        new_post = Post(title=title, content=content, id=id)
         db.session.add(new_post)
         db.session.commit()
 
-    posts = Post.query.all()
+    posts = Post.query.filter_by(user_id=id)
     return render_template('profile.html', posts=posts,nav_items=nav_items)
 
     
 @app.route('/posts')
+@login_required
 def view_posts():
-    nav_items = [
-    {'name': 'Home', 'url': '/home'},
-    {'name': 'Profile', 'url': '/profile'},
-    {'name': 'Logout', 'url': '/logout'}
+    if current_user.is_authenticated:
+            nav_items = [
+        {'name': 'Home', 'url': '/home'},
+        {'name': 'Profile', 'url': '/profile'},
+        {'name': 'Logout', 'url': '/logout'}
 
 
-]
+    ]
+    else:
+        nav_items = [
+                {'name': 'Home', 'url': '/home'},
+                {'name': 'Profile', 'url': '/profile'},
+                {'name': 'Register', 'url': '/register'},
+                {'name': 'Login', 'url': '/login'}
+
+
+    ]
     posts = Post.query.all()
     return render_template('posts.html', posts=posts,nav_items=nav_items)
 
 @app.route('/delete_post/<int:post_id>', methods=['POST'])
+@login_required
 def delete_post(post_id):
     post = Post.query.get(post_id)
     db.session.delete(post)
@@ -175,6 +190,7 @@ def delete_post(post_id):
 
 @app.route('/users')
 def show_users():
+    
       with app.app_context():
             users = User.query.all()
             for user in users:
