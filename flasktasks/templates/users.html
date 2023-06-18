@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  {% for user in data.users %}
+{{user.name}}
+<a href="{{ url_for('send_request', reciever_id=user.id) }}">Add Friend</a>
+     <br>
+     {% endfor %}
+   
+{% endblock %}
+
+{% with nav_items = nav_items %}
+{% endwith %}

@@ -6,7 +6,7 @@
 {% endif %}
 
 {% endwith %}
-<form method="POST" action ="" class="w-50">
+<form method="POST" action ="" class="w-50" enctype="multipart/form-data">
 {% for field in data.form %}
 <div class="form-group ">
     {{ data.form.hidden_tag() }}
