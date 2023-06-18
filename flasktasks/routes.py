@@ -3,19 +3,20 @@ from flask import render_template, redirect, url_for, flash,request
 import sqlalchemy 
 from sqlalchemy import insert , and_ , event 
 from flasktasks import app , forms,db, bcrypt , login_manager
-from flasktasks.models import User , friends_table , requests_table , Notification
+from flasktasks.models import User , friends_table , requests_table , Notification,Post
 from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.utils import secure_filename
 import os
 
 nav_items = [
     {'name': 'Home', 'url': '/home'},
-    {'name': 'About', 'url': '/about'},
+    {'name': 'Profile', 'url': '/profile'},
     {'name': 'Register', 'url': '/register'},
     {'name': 'Login', 'url': '/login'}
 
 
 ]
+
 users = [
     {'email': 'test@example.com',
      'password1':'12345678',
@@ -30,11 +31,44 @@ users = [
 
 @app.route('/home')
 def home_endpoint():
+    if current_user.is_authenticated:
+        nav_items = [
+    {'name': 'Home', 'url': '/home'},
+    {'name': 'Profile', 'url': '/profile'},
+    {'name': 'Logout', 'url': '/logout'}
+
+
+]
+    else:
+        nav_items = [
+    {'name': 'Home', 'url': '/home'},
+    {'name': 'Profile', 'url': '/profile'},
+    {'name': 'Logout', 'url': '/logout'}
+
+
+]
+            
     return render_template('home.html' , nav_items=nav_items)
 
-@app.route('/about')
-def about_endpoint():
-    return render_template('about.html', nav_items=nav_items)
+@app.route('/profile')
+def profile_endpoint():
+    if current_user.is_authenticated:
+        nav_items = [
+    {'name': 'Home', 'url': '/home'},
+    {'name': 'Profile', 'url': '/profile'},
+    {'name': 'Logout', 'url': '/logout'}
+
+
+]
+    else:
+        nav_items = [
+    {'name': 'Home', 'url': '/home'},
+    {'name': 'Profile', 'url': '/profile'},
+    {'name': 'Logout', 'url': '/logout'}
+
+
+]
+    return render_template('profile.html', nav_items=nav_items)
 
 @app.route('/register' , methods=['POST','GET'])
 def register_endpoint():
@@ -94,6 +128,50 @@ def login_endpoint():
 def logout():
     logout_user()
     return redirect(url_for('login_endpoint'))
+
+@app.route('/profile',methods=['GET','POST'])
+def profile():
+    nav_items = [
+    {'name': 'Home', 'url': '/home'},
+    {'name': 'Profile', 'url': '/profile'},
+    {'name': 'Logout', 'url': '/logout'}
+
+
+]
+    if request.method=='POST':
+        title=request.form['title']
+        content=request.form['content']
+        user_id=current_user.id
+        new_post = Post(title=title, content=content, user_id=user_id)
+        db.session.add(new_post)
+        db.session.commit()
+
+    posts = Post.query.all()
+    return render_template('profile.html', posts=posts,nav_items=nav_items)
+
+    
+@app.route('/posts')
+def view_posts():
+    nav_items = [
+    {'name': 'Home', 'url': '/home'},
+    {'name': 'Profile', 'url': '/profile'},
+    {'name': 'Logout', 'url': '/logout'}
+
+
+]
+    posts = Post.query.all()
+    return render_template('posts.html', posts=posts,nav_items=nav_items)
+
+@app.route('/delete_post/<int:post_id>', methods=['POST'])
+def delete_post(post_id):
+    post = Post.query.get(post_id)
+    db.session.delete(post)
+    db.session.commit()
+    flash('Post deleted successfully', 'danger')
+    return redirect(url_for('view_posts'))
+
+
+
 
 @app.route('/users')
 def show_users():
