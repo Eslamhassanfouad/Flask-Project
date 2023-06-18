@@ -3,14 +3,49 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='home.css') }}">
     {% endblock %}
 {% block content %}
-  <h1>Welcome to my home page!</h1>
-  <p>This is some content for the home page.</p>
-  {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
-      <h1>{{ message }}</h1>
-      {% endfor %}
+ 
+<div class="container mt-5">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div id="flash-messages">
+          {% for message in messages %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
       {% endif %}
-    
-      {% endwith %}
+    {% endwith %}
+  <div class="row">
+    {% for post in posts %}
+    <div class="col-md-6 offset-md-3">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">{{ post.0.title }}</h5>
+          <p class="card-text">{{ post.0.content }}</p>
+          <p class="card-text"><small class="text-muted">Posted on: {{ post.0.date_posted }}</small></p>
+          <p class="card-text"><small class="text-muted">Posted By: {{ post.1.name }}</small></p>
+
+          
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  // Automatically hide flash messages after 2 seconds
+  setTimeout(function() {
+    let flashMessages = document.getElementById('flash-messages');
+    if (flashMessages) {
+      flashMessages.innerHTML = '';
+      flashMessages.style.display = 'none'; // Optional: Hide the container element
+    }
+  }, 1000);
+</script>
+
 {% endblock %}
 
 {% with nav_items = nav_items %}

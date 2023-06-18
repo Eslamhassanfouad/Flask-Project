@@ -10,21 +10,12 @@ import os
 
 nav_items = [
     {'name': 'Home', 'url': '/home'},
-    {'name': 'Profile', 'url': '/profile'},
     {'name': 'Register', 'url': '/register'},
     {'name': 'Login', 'url': '/login'}
 
 
 ]
 
-users = [
-    {'email': 'test@example.com',
-     'password1':'12345678',
-      },
-     {'email': 'test2@example.com',
-     'password1':'12345678',
-      },
-]
 
 
     
@@ -34,7 +25,7 @@ def home_endpoint():
     if current_user.is_authenticated:
         nav_items = [
     {'name': 'Home', 'url': '/home'},
-    {'name': 'Profile', 'url': '/profile'},
+    {'name': 'Profile', 'url': f'/profile/{current_user.id}'},
     {'name': 'Logout', 'url': '/logout'}
 
 
@@ -42,33 +33,17 @@ def home_endpoint():
     else:
         nav_items = [
     {'name': 'Home', 'url': '/home'},
-    {'name': 'Profile', 'url': '/profile'},
-    {'name': 'Logout', 'url': '/logout'}
+    {'name': 'Login', 'url': '/login'}
 
 
-]
-            
-    return render_template('home.html' , nav_items=nav_items)
-
-@app.route('/profile')
-def profile_endpoint():
-    if current_user.is_authenticated:
-        nav_items = [
-    {'name': 'Home', 'url': '/home'},
-    {'name': 'Profile', 'url': '/profile'},
-    {'name': 'Logout', 'url': '/logout'}
-
-
-]
-    else:
-        nav_items = [
-    {'name': 'Home', 'url': '/home'},
-    {'name': 'Profile', 'url': '/profile'},
-    {'name': 'Logout', 'url': '/logout'}
-
-
-]
-    return render_template('profile.html', nav_items=nav_items)
+]  
+    
+    with app.app_context():
+        #  posts = Post.query.all() 
+         posts = db.session.query(Post, User).join(Post, (User.id == Post.user_id)).all()
+         for post in posts:
+              print(post[1])
+    return render_template('home.html' , nav_items=nav_items , posts=posts)
 
 @app.route('/register' , methods=['POST','GET'])
 def register_endpoint():
@@ -129,11 +104,13 @@ def logout():
     logout_user()
     return redirect(url_for('login_endpoint'))
 
-@app.route('/profile',methods=['GET','POST'])
-def profile():
+@app.route('/profile/<int:id>',methods=['GET','POST'])
+@login_required
+def profile(id):
+    status = "NotFriend"
     nav_items = [
     {'name': 'Home', 'url': '/home'},
-    {'name': 'Profile', 'url': '/profile'},
+    {'name': 'Profile', 'url': f'/profile/{current_user.id}'},
     {'name': 'Logout', 'url': '/logout'}
 
 
@@ -146,21 +123,30 @@ def profile():
         db.session.add(new_post)
         db.session.commit()
 
-    posts = Post.query.all()
-    return render_template('profile.html', posts=posts,nav_items=nav_items)
+    if check_request(id , current_user.id):
+         status = "Requested"
+    if is_friend(id , current_user.id):
+         status = "Friend"
+              
+    posts = Post.query.filter_by(user_id=id)
+    user = User.query.filter_by(id=id).first()
+    if user:
+        return render_template('profile.html', posts=posts,nav_items=nav_items, user=user, status=status)
+    else:
+         return render_template('not_found.html')
 
     
-@app.route('/posts')
-def view_posts():
-    nav_items = [
-    {'name': 'Home', 'url': '/home'},
-    {'name': 'Profile', 'url': '/profile'},
-    {'name': 'Logout', 'url': '/logout'}
+# @app.route('/posts')
+# def view_posts():
+#     nav_items = [
+#     {'name': 'Home', 'url': '/home'},
+#     {'name': 'Profile', 'url': f'/profile/' + current_user.id},
+#     {'name': 'Logout', 'url': '/logout'}
 
 
-]
-    posts = Post.query.all()
-    return render_template('posts.html', posts=posts,nav_items=nav_items)
+# ]
+#     posts = Post.query.all()
+#     return render_template('posts.html', posts=posts,nav_items=nav_items)
 
 @app.route('/delete_post/<int:post_id>', methods=['POST'])
 def delete_post(post_id):
@@ -275,3 +261,18 @@ def show_notifications():
       notifications = current_user.notifications
       return render_template('notifications.html', data = {'notifications':notifications})
 
+
+def check_request(sender_id , reciever_id):
+     with app.app_context():
+          request_sent = db.session.query(requests_table).filter_by(sender_id=sender_id, reciever_id = reciever_id).first()
+          request_received = db.session.query(requests_table).filter_by(sender_id=reciever_id, reciever_id = sender_id).first()
+          print(request_received)
+          print(request_sent)
+          return request_sent is not None or request_received is not None
+
+
+def is_friend(user1_id, user2_id):
+     with app.app_context():
+          friend_of = db.session.query(friends_table).filter_by(user_id = user1_id, friend_id = user2_id).first()   
+          friend_to= db.session.query(friends_table).filter_by(user_id = user2_id, friend_id = user1_id).first()  
+          return  friend_of is not None  or friend_to is not None      

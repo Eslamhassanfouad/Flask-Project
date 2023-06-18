@@ -21,6 +21,5 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login_endpoint'
 
 from flasktasks import routes
-from flasktasks.routes import users
 from flasktasks.models import User
 
