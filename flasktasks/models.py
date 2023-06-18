@@ -1,18 +1,19 @@
 from datetime import datetime
+from flasktasks import app
 from flask_login import  UserMixin
 from flasktasks import db , login_manager
-
+from sqlalchemy import event
 
 
 friends_table = db.Table('friends',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key = True),
-    db.Column('friend_id', db.Integer, db.ForeignKey('user.id'),  primary_key = True)
+    db.Column('friend_id', db.Integer, db.ForeignKey('user.id'),  primary_key = True),
 )
 requests_table = db.Table('request',
     db.Column('sender_id', db.Integer, db.ForeignKey('user.id' ),  primary_key = True),
     db.Column('reciever_id', db.Integer, db.ForeignKey('user.id'),  primary_key = True)
 )
-# User Table
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), nullable=False)
@@ -31,6 +32,8 @@ class User(db.Model, UserMixin):
                                secondaryjoin=(requests_table.c.reciever_id == id),
                                backref=db.backref('requested_to', lazy='dynamic'),
                                lazy='dynamic')
+    image = db.Column(db.String(255),nullable=True)
+    notifications = db.relationship('Notification', backref='author')
 
     def __repr__(self):
         return f"(name: {self.name}, email: {self.email})"
@@ -41,17 +44,36 @@ class Post(db.Model):
     title = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.now())
-    # Tables = lowercase , Classes = Uppercase
-    # notice we use 'user' to refrence a table's column,
-    # and we used 'Post' to refrence a class
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # dunder/magic method for print user object
     def __repr__(self):
         return f"{self.title}, {self.content}, {self.date_posted}"
+
+
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    datetime_posted = db.Column(db.DateTime, default=datetime.now())
+    description = db.Column(db.Text)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# @event.listens_for(User.friends,'append')
+# def on_friend_created(mapper,connection,friendship):
+#       print("TRIIIIGGGEREED")
+#       with app.app_context():
+#         sender_id = friendship.friend_id
+#         reciever = User.query.filter(User.id == friendship.user_id).first()
+#         notification = Notification(user_id=sender_id,
+#                                     description= f"{reciever.name} has accepted your request! You are new freinds."
+#                                     )
+#         db.session.add(notification)
+#         db.session.commit()
+# @event.listens_for(User.requests,'append')
+# def on_friend_created(mapper,connection,friendship):
+#       print("TRIIIIGGGEREED")
+      

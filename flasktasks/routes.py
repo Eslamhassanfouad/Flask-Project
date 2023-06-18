@@ -1,9 +1,12 @@
 from sqlite3 import IntegrityError
 from flask import render_template, redirect, url_for, flash,request
-import sqlalchemy
+import sqlalchemy 
+from sqlalchemy import insert , and_ , event 
 from flasktasks import app , forms,db, bcrypt , login_manager
-from flasktasks.models import User
+from flasktasks.models import User , friends_table , requests_table , Notification
 from flask_login import current_user, login_user, logout_user, login_required
+from werkzeug.utils import secure_filename
+import os
 
 nav_items = [
     {'name': 'Home', 'url': '/home'},
@@ -37,13 +40,20 @@ def about_endpoint():
 def register_endpoint():
     register_form = forms.RegisterForm()
     if register_form.validate_on_submit():
+        image = request.files['image']
+        if image:
+            image.save(os.path.join(app.config['UPLOAD_FOLDER'], image.filename))
+            url = image.filename
+        else:
+            url = 'default.jpg'
         try:
                   with app.app_context():
                             hashed_pw = bcrypt.generate_password_hash(register_form.password1.data).decode('utf-8')
                             new_user = User(
                                 name=register_form.name.data,
                                 email=register_form.email.data,
-                                password=hashed_pw
+                                password=hashed_pw,
+                                image = url
                             )
                             db.session.add(new_user)
                             db.session.commit()
@@ -84,4 +94,106 @@ def login_endpoint():
 def logout():
     logout_user()
     return redirect(url_for('login_endpoint'))
+
+@app.route('/users')
+def show_users():
+      with app.app_context():
+            users = User.query.all()
+            for user in users:
+                  print(user.name)
+            return render_template('users.html', data = {'users': users})
+
+@app.route('/request/<int:reciever_id>')
+@login_required
+def send_request(reciever_id):
+      sender_id = current_user.id
+      with app.app_context():
+            new_request = {
+                  'sender_id' : sender_id,
+                  'reciever_id' : reciever_id
+            }
+            stmt = insert(requests_table).values(new_request)
+            db.session.execute(stmt)
+            db.session.commit()
+            send_notification({
+                  'user_id' : reciever_id,
+                  'friend_id' : sender_id
+            },
+            'request sent')
+      return render_template('home.html' , nav_items=nav_items)
+
+@app.route('/requests')
+@login_required
+def show_requests():
+    with app.app_context():
+        # requests = current_user.requests.join(User, current_user.id == requests_table.c.sender_id).all()
+        requests = db.session.query(User, requests_table).join(requests_table, and_(User.id == requests_table.c.sender_id, requests_table.c.reciever_id == current_user.id)).all()
+        print(f"Requests : {requests}")
+        for request in requests:
+              print(request[0].image)
+              print(request[1])
+    return render_template('requests.html', data = {'requests':requests})
+
+@app.route('/requests/delete/<int:reciever_id>/<int:sender_id>')
+@login_required
+def delete_request(reciever_id, sender_id):
+      with app.app_context():
+            query = db.session.query(requests_table).filter_by(reciever_id=reciever_id, sender_id=sender_id).delete()  
+            db.session.commit()
+
+      return redirect(url_for('show_requests'))    
+
+
+@app.route('/requests/confirm/<int:reciever_id>/<int:sender_id>')
+@login_required
+def confirm_request(reciever_id, sender_id):
+      with app.app_context():
+            new_friend_for_reciever = {
+                  'user_id' : reciever_id,
+                  'friend_id' : sender_id
+            }
+            new_friend_for_sender= {
+                  'user_id' : sender_id,
+                  'friend_id' : reciever_id
+            }
+            stmt = insert(friends_table).values(new_friend_for_reciever)
+            db.session.execute(stmt)
+            stmt = insert(friends_table).values(new_friend_for_sender)
+            db.session.execute(stmt)
+            db.session.commit()
+            send_notification(new_friend_for_reciever , 'friend accepted')
+            delete_request(reciever_id, sender_id)
+      return redirect(url_for('show_requests'))
+
+@app.route('/friends')
+@login_required
+def show_friends():
+      friends = current_user.friends.all()
+      print(friends)
+      return render_template('friends.html', data = {'friends':friends})
+
+
+def send_notification(friendship , type):
+      with app.app_context():
+        sender_id = friendship['friend_id']
+        reciever = User.query.filter(User.id == friendship['user_id']).first()
+        sender = User.query.filter(User.id == friendship['friend_id']).first()
+        if type == 'friend accepted':
+            description = f"{reciever.name} has accepted your request! You are now friends."
+            id = sender_id
+        else:    
+            description = f"{sender.name} has sen you a friend request."
+            id = reciever.id
+        notification = Notification(user_id=id,
+                                          description= description
+                                          )
+        db.session.add(notification)
+        db.session.commit()
+
+
+@app.route('/notifications')
+@login_required
+def show_notifications():
+      notifications = current_user.notifications
+      return render_template('notifications.html', data = {'notifications':notifications})
 

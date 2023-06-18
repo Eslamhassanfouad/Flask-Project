@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='friends.css') }}">
+{% endblock %}
+
+
+{% block content %}
+<div class="bg-light ">
+  {% for user in data.friends %}
+  <div class = " d-flex col-6 bg-black justify-content-between align-content-between friend ">
+    {% if user.image %}
+    <img src="{{ url_for('static', filename='uploads/'+ user.image) }}" height="20%"  alt="">
+    {% else %}
+    <img src="{{ url_for('static', filename='uploads/default.jpg') }}" height="20%" alt="">
+    {% endif %}
+ <h1>{{user.name}}</h1>
+
+     {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% with nav_items = nav_items %}
+{% endwith %}

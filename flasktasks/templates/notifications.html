@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  {% for n in data.notifications %}
+{{n.description}}
+     <br>
+     {% endfor %}
+   
+{% endblock %}
+
+{% with nav_items = nav_items %}
+{% endwith %}

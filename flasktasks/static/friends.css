@@ -1,0 +1,9 @@
+.friend{
+    height: 200px;
+    
+    border:1px solid white;
+}
+img{
+    display: block;
+    width: 200px;
+}

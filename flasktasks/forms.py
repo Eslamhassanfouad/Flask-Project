@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, SubmitField, FileField
+from flask_wtf.file import FileAllowed, FileRequired
 from wtforms.validators import DataRequired, Length, Email, EqualTo
 
 class RegisterForm(FlaskForm):
@@ -25,6 +26,10 @@ class RegisterForm(FlaskForm):
                               EqualTo('password1')
                               ]
     )
+    image = FileField('Profile Picture', validators=[
+            FileRequired(),
+            FileAllowed(['jpg', 'png', 'jpeg'], 'Images only!')
+    ])    
     submit = SubmitField('Register')
 
 

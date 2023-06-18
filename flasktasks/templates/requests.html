@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='requests.css') }}">
+{% endblock %}
+
+
+{% block content %}
+<h1 id="head"> Friend Requests </h1>
+<div class=" container flex-column justify-content-center align-content-center ">
+  {% for request in data.requests %}
+<div class="request d-flex flex-row align-content-center my-3 ">
+    {% if request.0.image  %}
+   <div class="user-image ">
+    <img src="{{ url_for('static', filename='uploads/' + request.0.image) }}" height="20%" width="100px" alt="">
+</div>
+     {% else %} 
+   <div class="user-image" >
+        <img src="{{ url_for('static', filename='uploads/default.jpg' ) }}" height="20%" width="100px" alt="">
+    </div>
+
+    {% endif %}
+      
+        <div class="my-auto user-name"><h1> {{ request.0.name}} </h1> </div>
+        <div class="col-1 my-auto mx-2">
+                <a class="btn-sm btn-success btn" href="{{ url_for('confirm_request', sender_id=request.1 , reciever_id=request.2 ) }}">Confirm</a>
+        </div>
+        <div class="col-2 my-auto mx-4"> 
+            <a class="btn-sm btn-danger btn" href="{{ url_for('delete_request', sender_id=request.1 , reciever_id=request.2 ) }}">Delete</a>
+        </div>
+            
+        </div>
+     {% endfor %}
+    </div>
+{% endblock %}
