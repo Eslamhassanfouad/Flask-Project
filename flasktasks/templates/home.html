@@ -17,13 +17,22 @@
         </div>
       {% endif %}
     {% endwith %}
+    <form method="GET" action="/home">
+      <label for="privacy">Filter by Privacy:</label>
+      <select name="privacy" id="privacy">
+        <option value="friends">Friends</option>
+        <option value="public">Public</option>
+      </select>
+      <button type="submit">Filter</button>
+    </form>
   <div class="row">
     {% for post in posts %}
     <div class="col-md-6 offset-md-3">
       <div class="card mb-3">
         <div class="card-body">
           <h5 class="card-title">{{ post.0.title }}</h5>
-          <p class="card-text">{{ post.0.content }}</p>
+          <p class="card-text">{{ post.0.content }}</p> 
+
           <p class="card-text"><small class="text-muted">Posted on: {{ post.0.date_posted }}</small></p>
           <p class="card-text"><small class="text-muted">Posted By: {{ post.1.name }}</small></p>
 

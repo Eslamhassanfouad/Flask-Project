@@ -16,10 +16,6 @@ nav_items = [
 
 ]
 
-
-
-    
-
 @app.route('/home')
 def home_endpoint():
     if current_user.is_authenticated:
@@ -27,22 +23,22 @@ def home_endpoint():
     {'name': 'Home', 'url': '/home'},
     {'name': 'Profile', 'url': f'/profile/{current_user.id}'},
     {'name': 'Logout', 'url': '/logout'}
-
-
 ]
     else:
         nav_items = [
     {'name': 'Home', 'url': '/home'},
     {'name': 'Login', 'url': '/login'}
-
-
 ]  
     
+    privacy = request.args.get('privacy')
     with app.app_context():
-        #  posts = Post.query.all() 
-         posts = db.session.query(Post, User).join(Post, (User.id == Post.user_id)).all()
-         for post in posts:
-              print(post[1])
+         if privacy == 'friends':
+              user_friends = [friend.id for friend in current_user.friends ]
+              posts = db.session.query(Post, User).join(Post,and_(User.id == Post.user_id, Post.user_id.in_(user_friends))).all()
+              print(posts)
+         else:     
+            posts = db.session.query(Post, User).join(Post, and_(User.id == Post.user_id, Post.privacy=='public')).all()
+        
     return render_template('home.html' , nav_items=nav_items , posts=posts)
 
 @app.route('/register' , methods=['POST','GET'])
@@ -71,12 +67,7 @@ def register_endpoint():
                             return redirect(url_for('home_endpoint'))
         except sqlalchemy.exc.IntegrityError:
                     flash(f"Email Already Exists!")
-                    return redirect(url_for('register_endpoint'))
-
-                        
-        
-        
-      
+                    return redirect(url_for('register_endpoint'))    
     return render_template('register.html', data = {'form': register_form , 'nav_items': nav_items})
 
 @app.route('/login' , methods=['POST','GET'])
@@ -118,8 +109,9 @@ def profile(id):
     if request.method=='POST':
         title=request.form['title']
         content=request.form['content']
-        id=request.form['user_id']
-        new_post = Post(title=title, content=content, id=id)
+        user_id=current_user.id
+        privacy = request.form['privacy']
+        new_post = Post(title=title, content=content, user_id = user_id, privacy = privacy)
         db.session.add(new_post)
         db.session.commit()
 
@@ -127,26 +119,20 @@ def profile(id):
          status = "Requested"
     if is_friend(id , current_user.id):
          status = "Friend"
-              
-    posts = Post.query.filter_by(user_id=id)
+    if status == "NotFriend" or status == "Requested":
+         posts = Post.query.filter_by(user_id=id,privacy='public')      
+    else:         
+         posts = Post.query.filter_by(user_id=id)
+    if id == current_user.id:
+         posts =  Post.query.filter_by(user_id=id)     
     user = User.query.filter_by(id=id).first()
     if user:
         return render_template('profile.html', posts=posts,nav_items=nav_items, user=user, status=status)
     else:
          return render_template('not_found.html')
 
-    
-# @app.route('/posts')
-# def view_posts():
-#     nav_items = [
-#     {'name': 'Home', 'url': '/home'},
-#     {'name': 'Profile', 'url': f'/profile/' + current_user.id},
-#     {'name': 'Logout', 'url': '/logout'}
 
 
-# ]
-#     posts = Post.query.all()
-#     return render_template('posts.html', posts=posts,nav_items=nav_items)
 
 @app.route('/delete_post/<int:post_id>', methods=['POST'])
 @login_required
@@ -155,7 +141,7 @@ def delete_post(post_id):
     db.session.delete(post)
     db.session.commit()
     flash('Post deleted successfully', 'danger')
-    return redirect(url_for('view_posts'))
+    return redirect(f'/profile/{current_user.id}')
 
 
 
@@ -168,6 +154,8 @@ def show_users():
             for user in users:
                   print(user.name)
             return render_template('users.html', data = {'users': users})
+      
+
 
 @app.route('/request/<int:reciever_id>')
 @login_required
@@ -186,7 +174,9 @@ def send_request(reciever_id):
                   'friend_id' : sender_id
             },
             'request sent')
-      return render_template('home.html' , nav_items=nav_items)
+      return redirect(request.referrer)
+
+
 
 @app.route('/requests')
 @login_required
@@ -199,6 +189,9 @@ def show_requests():
               print(request[0].image)
               print(request[1])
     return render_template('requests.html', data = {'requests':requests})
+
+
+
 
 @app.route('/requests/delete/<int:reciever_id>/<int:sender_id>')
 @login_required

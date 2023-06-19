@@ -1,12 +1,13 @@
 {% extends 'layout.html' %}
-{% block content %}
-{% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
-<h1>{{ message }}</h1>
-{% endfor %}
-{% endif %}
+{% block styles %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='forms_register.css') }}">
+    {% endblock %}
 
-{% endwith %}
-<form method="POST" action ="" class="w-50" enctype="multipart/form-data">
+{% block content %}
+
+<div class="container"> 
+    <h2>Register Form</h2>
+<form method="POST" action ="" class="w-75" enctype="multipart/form-data">
 {% for field in data.form %}
 <div class="form-group ">
     {{ data.form.hidden_tag() }}
@@ -24,8 +25,19 @@
 {% endif %}
     
 {% endif %}
+</div>
 {% endfor %}
+
 </div>
 </form>
 
+<div>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <h1 color="red">{{ message }}</h1>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
 {% endblock %}
